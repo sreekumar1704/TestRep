@@ -117,11 +117,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // RFP Search endpoint - proxy to TED EUROPA API
   app.post("/api/rfp/search", async (req, res) => {
     try {
-      // Validate request body
-      const filters = filterOptionsSchema.parse(req.body);
-
-      // Build TED query
-      const query = buildTEDQuery(filters);
+      // Use default query as provided by user
+      const query = "(publication-date>=20251001<=today()) AND ((FT~\"Document Management\") OR (FT~\"Record Management\")) AND (submission-language=ENG)";
 
       console.log("TED EUROPA Query:", query);
 
@@ -136,7 +133,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
         body: JSON.stringify({
           query,
-          fields: ["sme-part", "notice"],
+          fields: ["sme-part"],
         }),
       });
 
@@ -156,15 +153,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("TED API Response:", JSON.stringify(tedData, null, 2).substring(0, 500));
 
       // Transform response to our schema
-      let transformedData = transformTEDResponse(tedData);
-
-      // Post-process: Filter by SME participation if requested
-      if (filters.smeOnly) {
-        transformedData.notices = transformedData.notices.filter(
-          (notice: any) => notice.smeParticipation === true
-        );
-        transformedData.total = transformedData.notices.length;
-      }
+      const transformedData = transformTEDResponse(tedData);
 
       // Validate response
       const validatedData = searchResponseSchema.parse(transformedData);

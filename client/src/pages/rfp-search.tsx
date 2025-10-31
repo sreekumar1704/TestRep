@@ -1,18 +1,14 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { FilterOptions, RFPNotice } from "@shared/schema";
-import { SearchFilters } from "@/components/search-filters";
+import { RFPNotice } from "@shared/schema";
 import { RFPTable } from "@/components/rfp-table";
 import { RFPDetailDrawer } from "@/components/rfp-detail-drawer";
 import { ErrorBanner } from "@/components/error-banner";
+import { Button } from "@/components/ui/button";
 import { apiRequest } from "@/lib/queryClient";
-import { FileText } from "lucide-react";
+import { FileText, Search } from "lucide-react";
 
 export default function RFPSearchPage() {
-  const [filters, setFilters] = useState<FilterOptions>({
-    category: "all",
-    smeOnly: false,
-  });
   const [selectedRFP, setSelectedRFP] = useState<RFPNotice | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [errorDismissed, setErrorDismissed] = useState(false);
@@ -21,10 +17,10 @@ export default function RFPSearchPage() {
     notices: RFPNotice[];
     total: number;
   }>({
-    queryKey: ["/api/rfp/search", filters],
+    queryKey: ["/api/rfp/search"],
     queryFn: async () => {
       setErrorDismissed(false);
-      const res = await apiRequest("POST", "/api/rfp/search", filters);
+      const res = await apiRequest("POST", "/api/rfp/search", {});
       return await res.json();
     },
     enabled: false,
@@ -64,14 +60,22 @@ export default function RFPSearchPage() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 py-6">
-        {/* Search & Filters */}
+        {/* Simple Search Button */}
         <div className="sticky top-16 z-10 bg-background pb-4">
-          <SearchFilters
-            filters={filters}
-            onFiltersChange={setFilters}
-            onSearch={handleSearch}
-            isLoading={isLoading}
-          />
+          <div className="bg-card border border-card-border rounded-md p-6">
+            <Button
+              onClick={handleSearch}
+              disabled={isLoading}
+              data-testid="button-search"
+              className="h-10"
+            >
+              <Search className="w-4 h-4 mr-2" />
+              {isLoading ? "Searching..." : "Search RFPs"}
+            </Button>
+            <p className="text-sm text-muted-foreground mt-2">
+              Search for Document Management and Record Management RFPs from October 2025 onwards
+            </p>
+          </div>
         </div>
 
         {/* Error Banner */}
