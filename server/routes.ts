@@ -43,61 +43,74 @@ function buildTEDQuery(filters: z.infer<typeof filterOptionsSchema>): string {
 // Helper to transform TED API response to our schema
 function transformTEDResponse(tedResponse: any): any {
   try {
-    // TED API returns a complex structure - we need to extract and transform the data
-    const notices = Array.isArray(tedResponse.results) 
-      ? tedResponse.results
+    console.log("Raw TED Response structure:", Object.keys(tedResponse));
+    
+    // TED API returns notices in the "notices" array
+    const noticesArray = tedResponse.notices || tedResponse.results || [];
+    
+    const notices = Array.isArray(noticesArray) 
+      ? noticesArray
           .map((item: any, index: number) => {
-            // Extract fields from the TED response structure
-            // Note: The actual structure may vary - this is a best-effort transformation
-            const notice = item.notice || item;
+            console.log(`Notice ${index} keys:`, Object.keys(item));
             
-            // Extract SME participation from various possible field locations
-            // TED API returns this in the "sme-part" field which may be at item or notice level
-            // The value can be boolean, string "YES"/"NO", or other variants
-            const smePart = item["sme-part"] || notice["sme-part"] || notice.smeParticipation || notice.suitableForSME || notice.sme;
+            // Extract SME participation from the "sme-part" field
+            const smePart = item["sme-part"];
             const smeParticipation = 
               smePart === true ||
-              (typeof smePart === "string" && ["YES", "yes", "true", "TRUE", "Y", "1"].includes(smePart.trim()));
+              smePart === "YES" ||
+              smePart === "yes" ||
+              smePart === "Y";
             
-            // Extract document links with fallbacks
-            const documents = notice.documents || notice.attachments || notice.links || [];
-            const documentLinks = Array.isArray(documents)
-              ? documents
-                  .map((doc: any) => ({
-                    url: doc.url || doc.link || doc.href || "",
-                    title: doc.title || doc.name || doc.description || "Document",
-                    type: doc.type || doc.format || doc.mimeType || undefined,
-                  }))
-                  .filter((doc: any) => doc.url && doc.url.trim().length > 0)
-              : [];
-
-            // Log if documents are missing for debugging
-            if (documentLinks.length === 0) {
-              console.warn(`Notice ${notice.id || index} has no valid document links`);
+            // Extract document links from the "links" object
+            const links = item.links || {};
+            const documentLinks: any[] = [];
+            
+            // Add PDF links if available
+            if (links.pdf) {
+              Object.entries(links.pdf).forEach(([lang, url]: [string, any]) => {
+                documentLinks.push({
+                  url: url,
+                  title: `PDF (${lang})`,
+                  type: "PDF",
+                });
+              });
+            }
+            
+            // Add XML links if available
+            if (links.xml) {
+              Object.entries(links.xml).forEach(([lang, url]: [string, any]) => {
+                documentLinks.push({
+                  url: url,
+                  title: `XML (${lang})`,
+                  type: "XML",
+                });
+              });
             }
 
             return {
-              id: notice.id || notice.noticeId || `notice-${index}`,
-              title: notice.title || notice.titleText || "Untitled Notice",
-              referenceNumber: notice.referenceNumber || notice.noticeNumber || undefined,
-              publicationDate: notice.publicationDate || notice.dispatchDate || new Date().toISOString(),
-              deadline: notice.deadline || notice.tenderDeadline || notice.submissionDeadline || undefined,
-              description: notice.description || notice.shortDescription || undefined,
-              contractingAuthority: notice.contractingAuthority?.name || notice.buyer?.name || undefined,
-              categories: notice.categories || notice.cpvCodes?.slice(0, 3) || [],
+              id: item["publication-number"] || item.id || `notice-${index}`,
+              title: item["notice-name"] || item.title || item["publication-number"] || "RFP Notice",
+              referenceNumber: item["publication-number"] || undefined,
+              publicationDate: item["publication-date"] || item["dispatch-date"] || new Date().toISOString(),
+              deadline: item["deadline"] || item["submission-deadline"] || undefined,
+              description: item["short-description"] || item.description || undefined,
+              contractingAuthority: item["contracting-authority-name"] || item["buyer-name"] || undefined,
+              categories: item["main-cpv-code"] ? [item["main-cpv-code"]] : [],
               smeParticipation,
               documentLinks,
-              cpvCodes: notice.cpvCodes || [],
-              country: notice.country || notice.countryCode || undefined,
-              value: notice.value || notice.estimatedValue || undefined,
-              language: notice.language || "EN",
+              cpvCodes: item["cpv-codes"] || [],
+              country: item["country-code"] || undefined,
+              value: item["estimated-value"] || undefined,
+              language: "EN",
             };
           })
       : [];
 
+    console.log(`Transformed ${notices.length} notices`);
+
     return {
       notices,
-      total: tedResponse.total || tedResponse.totalResults || notices.length,
+      total: tedResponse.total || notices.length,
       page: tedResponse.page || 1,
       pageSize: tedResponse.pageSize || notices.length,
     };
