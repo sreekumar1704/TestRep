@@ -118,7 +118,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/rfp/search", async (req, res) => {
     try {
       // Use default query as provided by user
-      const query = "(publication-date>=20251001<=today()) AND ((FT~\"Document Management\") OR (FT~\"Record Management\")) AND (submission-language=ENG)";
+      const query = "(publication-date>=20251001<=today()) AND ((FT~\"Document Management\") OR (FT~\"Record Management\") OR (FT~\"Case Management\") OR (FT~\"Call Centre\")) AND (submission-language=ENG)";
 
       console.log("TED EUROPA Query:", query);
 

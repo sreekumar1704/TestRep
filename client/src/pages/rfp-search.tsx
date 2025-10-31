@@ -73,7 +73,7 @@ export default function RFPSearchPage() {
               {isLoading ? "Searching..." : "Search RFPs"}
             </Button>
             <p className="text-sm text-muted-foreground mt-2">
-              Search for Document Management and Record Management RFPs from October 2025 onwards
+              Search for Document Management, Record Management, Case Management, and Call Centre RFPs from October 2025 onwards
             </p>
           </div>
         </div>
