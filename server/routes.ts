@@ -126,6 +126,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("TED EUROPA Query:", query);
 
       // Make request to TED EUROPA API
+      // Note: TED API requires 'fields' parameter with specific supported field names
+      // Using minimal set of supported fields to get the data we need
       const response = await fetch(TED_API_URL, {
         method: "POST",
         headers: {
@@ -134,7 +136,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
         body: JSON.stringify({
           query,
-          fields: ["sme-part", "title", "publication-date", "deadline"],
+          fields: ["sme-part", "notice"],
         }),
       });
 

@@ -62,12 +62,21 @@ export function RFPTable({
   const sortedData = [...data].sort((a, b) => {
     if (!sortField || !sortDirection) return 0;
 
-    let aVal: any = a[sortField];
-    let bVal: any = b[sortField];
+    let aVal: string = "";
+    let bVal: string = "";
 
     if (sortField === "category") {
       aVal = a.categories?.[0] || "";
       bVal = b.categories?.[0] || "";
+    } else if (sortField === "title") {
+      aVal = a.title;
+      bVal = b.title;
+    } else if (sortField === "publicationDate") {
+      aVal = a.publicationDate;
+      bVal = b.publicationDate;
+    } else if (sortField === "deadline") {
+      aVal = a.deadline || "";
+      bVal = b.deadline || "";
     }
 
     if (typeof aVal === "string" && typeof bVal === "string") {
